@@ -101,6 +101,12 @@
   .tool:focus-visible{ outline:2px solid var(--fiscal); outline-offset:1px; }
   .saved{ font-size:12px; color:var(--muted); opacity:0; transition:opacity .25s; }
   .saved.on{ opacity:1; }
+  .dirty{
+    font-size:11.5px; font-weight:600; color:var(--s-amber); background:var(--s-amber-wk);
+    border-radius:5px; padding:2px 8px; display:none; align-items:center; gap:5px;
+  }
+  .dirty.on{ display:inline-flex; }
+  .dirty .d{ width:6px; height:6px; border-radius:50%; background:var(--s-amber); }
 
   /* object header */
   .object-header{ padding: 40px 28px 20px; }
@@ -318,7 +324,8 @@
   <div class="topbar">
     <span>🗂️ Espaço TJB</span><span class="sep">/</span><span class="current">🎯 OKR — Ciclo 1</span>
     <span class="grow"></span>
-    <span class="saved" id="saved">✓ salvo</span>
+    <span class="dirty" id="dirty"><span class="d"></span>alterações não publicadas</span>
+    <span class="saved" id="saved">✓ salvo neste navegador</span>
     <button class="tool" id="btn-theme" title="Alternar tema" aria-label="Alternar tema claro/escuro"></button>
     <button class="tool" id="btn-import">Importar</button>
     <button class="tool" id="btn-export">Exportar</button>
@@ -380,12 +387,12 @@
         <p>O progresso de cada Objective é a média dos seus Key Results, e o número no topo é a média de todos. KRs em <strong>Aguardando definição</strong> ficam fora da conta até terem meta — por isso não puxam o resultado para baixo.</p>
       </div>
       <div class="guide-item">
-        <h4>Onde os dados ficam salvos</h4>
-        <p>Tudo é gravado automaticamente neste navegador (o aviso <strong>✓ salvo</strong> aparece no topo a cada alteração). Nada é enviado para servidor — quem abrir o link em outro computador começa da versão original.</p>
+        <h4>Todo mundo vê o mesmo painel</h4>
+        <p>Esta página carrega a versão publicada oficialmente sempre que é aberta — qualquer pessoa que abrir o link, em qualquer computador, vê o mesmo andamento. Se você editar algo aqui, a mudança fica guardada só neste navegador (aviso <strong>alterações não publicadas</strong> no topo) até ser publicada oficialmente.</p>
       </div>
       <div class="guide-item">
-        <h4>Compartilhar e fazer backup</h4>
-        <p><strong>Exportar</strong> baixa um arquivo JSON com o estado atual; <strong>Importar</strong> carrega esse arquivo de volta. É assim que você leva o acompanhamento para outra máquina ou passa para outra pessoa. <strong>Restaurar</strong> volta tudo à versão da reunião.</p>
+        <h4>Como publicar uma mudança</h4>
+        <p>Clique em <strong>Exportar</strong> para baixar um JSON com o estado atual e envie para quem mantém o painel atualizar a versão oficial. <strong>Importar</strong> carrega um JSON de volta nesta tela. <strong>Restaurar</strong> descarta suas edições locais e volta para a última versão publicada.</p>
       </div>
     </div>
     <p class="guide-note" id="note"></p>
@@ -516,27 +523,35 @@
     ]
   };
 
-  var state = load();
-  var krView = "board";
-  var editing = null;
-
   function clone(o){ return JSON.parse(JSON.stringify(o)); }
   function esc(s){
     return String(s == null ? "" : s)
       .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
       .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
   }
+  function validShape(p){
+    return !!p && Array.isArray(p.krs) && Array.isArray(p.objectives);
+  }
 
-  function load(){
+  function loadDraft(){
     try{
       var raw = localStorage.getItem(STORE);
       if(raw){
         var p = JSON.parse(raw);
-        if(p && Array.isArray(p.krs) && Array.isArray(p.objectives)) return p;
+        if(validShape(p)) return p;
       }
     }catch(e){}
-    return clone(SEED);
+    return null;
   }
+
+  // "published" = a última versão publicada oficialmente (data.json, quando acessível).
+  // Enquanto o fetch não resolve — ou quando é bloqueado, como no artifact do claude.ai —
+  // o SEED embutido serve de base, exatamente como antes.
+  var published = clone(SEED);
+  var draft = loadDraft();
+  var state = draft || clone(published);
+  var krView = "board";
+  var editing = null;
 
   var saveTimer, flashTimer;
   function save(){
@@ -551,6 +566,18 @@
     clearTimeout(flashTimer);
     flashTimer = setTimeout(function(){ el.classList.remove("on"); }, 1400);
   }
+
+  // Site estático (GitHub Pages etc.): busca o data.json publicado no mesmo domínio.
+  // No artifact do claude.ai, o CSP bloqueia fetch externo e isto falha silenciosamente —
+  // o SEED embutido continua servindo de base, sem quebrar nada.
+  fetch("./data.json", { cache:"no-store" })
+    .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+    .then(function(data){
+      if(!validShape(data)) return;
+      published = data;
+      if(!draft){ state = clone(published); render(); }
+    })
+    .catch(function(){ /* offline, CSP do artifact, ou data.json ainda não existe */ });
 
   function scored(kr){ return kr.status !== "espera"; }
   function krsOf(objId){
@@ -606,6 +633,9 @@
     renderObjectives();
     renderKrs();
     renderNote();
+    document.getElementById("dirty").classList.toggle(
+      "on", JSON.stringify(state) !== JSON.stringify(published)
+    );
   }
 
   function renderHeader(){
@@ -944,8 +974,8 @@
   });
 
   document.getElementById("btn-reset").addEventListener("click", function(){
-    if(!confirm("Restaurar o OKR para a versão original da reunião? As edições feitas aqui serão perdidas.")) return;
-    state = clone(SEED); render(); save();
+    if(!confirm("Restaurar para a última versão publicada? As edições feitas aqui neste navegador serão perdidas.")) return;
+    state = clone(published); render(); save();
   });
 
   render();
