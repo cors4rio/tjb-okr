@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Painel de acompanhamento dos OKRs da TJB Contabilidade - Ciclo 1.">
+<meta name="robots" content="noindex">
+<title>OKR — TJB Contabilidade</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#127919;</text></svg>">
+</head>
+<body><style>
+  :root{
+    color-scheme: light;
+    --bg:        #ffffff;
+    --chrome:    #f7f6f2;
+    --border:    #e8e6e0;
+    --border-2:  #ddd9d0;
+    --text:      #2f2e29;
+    --text-2:    #6b6a63;
+    --muted:     #a3a199;
+    --card:      #ffffff;
+    --hover:     #f7f6f2;
+
+    --fiscal:    #2a78d6;
+    --fiscal-wk: #eaf1fb;
+    --contabil:  #d1631f;
+    --contabil-wk:#fbeee3;
+    --med:       #14926a;
+    --med-wk:    #e5f5ee;
+
+    --s-grey:    #8b897f;  --s-grey-wk:  #efeee8;
+    --s-amber:   #b8790a;  --s-amber-wk: #fbecd2;
+    --s-green:   #0f8f2e;  --s-green-wk: #e0f4e2;
+    --s-lilac:   #7a6bc4;  --s-lilac-wk: #ece8f7;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:where(:not([data-theme="light"])){
+      color-scheme: dark;
+      --bg:        #1c1c1a;
+      --chrome:    #232320;
+      --border:    #34332e;
+      --border-2:  #3d3c36;
+      --text:      #ebe9e2;
+      --text-2:    #b3b0a5;
+      --muted:     #7d7b72;
+      --card:      #232320;
+      --hover:     #2a2a26;
+
+      --fiscal:    #5b9ae8;   --fiscal-wk: #1c2c3f;
+      --contabil:  #e2894f;   --contabil-wk:#3a2917;
+      --med:       #3fbf8f;   --med-wk:    #123325;
+
+      --s-grey:    #a09e94;  --s-grey-wk:  #2c2b27;
+      --s-amber:   #dba53f;  --s-amber-wk: #3a2e13;
+      --s-green:   #4bc46e;  --s-green-wk: #123321;
+      --s-lilac:   #a698e0;  --s-lilac-wk: #262040;
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --bg:#1c1c1a; --chrome:#232320; --border:#34332e; --border-2:#3d3c36;
+    --text:#ebe9e2; --text-2:#b3b0a5; --muted:#7d7b72; --card:#232320; --hover:#2a2a26;
+    --fiscal:#5b9ae8; --fiscal-wk:#1c2c3f; --contabil:#e2894f; --contabil-wk:#3a2917;
+    --med:#3fbf8f; --med-wk:#123325;
+    --s-grey:#a09e94; --s-grey-wk:#2c2b27; --s-amber:#dba53f; --s-amber-wk:#3a2e13;
+    --s-green:#4bc46e; --s-green-wk:#123321; --s-lilac:#a698e0; --s-lilac-wk:#262040;
+  }
+  :root[data-theme="light"]{
+    color-scheme: light;
+    --bg:#ffffff; --chrome:#f7f6f2; --border:#e8e6e0; --border-2:#ddd9d0;
+    --text:#2f2e29; --text-2:#6b6a63; --muted:#a3a199; --card:#ffffff; --hover:#f7f6f2;
+    --fiscal:#2a78d6; --fiscal-wk:#eaf1fb; --contabil:#d1631f; --contabil-wk:#fbeee3;
+    --med:#14926a; --med-wk:#e5f5ee;
+    --s-grey:#8b897f; --s-grey-wk:#efeee8; --s-amber:#b8790a; --s-amber-wk:#fbecd2;
+    --s-green:#0f8f2e; --s-green-wk:#e0f4e2; --s-lilac:#7a6bc4; --s-lilac-wk:#ece8f7;
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family: "Inter", ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size:14.5px; line-height:1.5;
+  }
+  .num{ font-variant-numeric: tabular-nums; }
+  .app{ max-width: 1000px; margin:0 auto; padding-bottom:80px; }
+
+  /* topbar / breadcrumb, like Anytype's minimal chrome */
+  .topbar{
+    display:flex; align-items:center; gap:6px;
+    padding: 10px 28px; border-bottom:1px solid var(--border);
+    background:var(--chrome); color:var(--text-2); font-size:13px;
+  }
+  .topbar .sep{ color:var(--muted); }
+  .topbar .current{ color:var(--text); font-weight:600; }
+  .topbar .grow{ flex:1; }
+  .tool{
+    font:inherit; font-size:12.5px; cursor:pointer; color:var(--text-2);
+    background:transparent; border:1px solid transparent; border-radius:6px; padding:4px 9px;
+  }
+  .tool:hover{ background:var(--hover); border-color:var(--border); color:var(--text); }
+  .tool:focus-visible{ outline:2px solid var(--fiscal); outline-offset:1px; }
+  .saved{ font-size:12px; color:var(--muted); opacity:0; transition:opacity .25s; }
+  .saved.on{ opacity:1; }
+
+  /* object header */
+  .object-header{ padding: 40px 28px 20px; }
+  .icon{
+    width:56px; height:56px; border-radius:14px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:28px; background:var(--chrome); border:1px solid var(--border);
+    margin-bottom:14px;
+  }
+  h1{ font-size:30px; font-weight:700; letter-spacing:-0.015em; margin:0 0 16px; text-wrap:balance; }
+
+  .relbar{ display:flex; flex-wrap:wrap; gap:6px 22px; }
+  .rel{ display:flex; align-items:center; gap:8px; font-size:13px; }
+  .rel-k{ color:var(--muted); }
+  .rel-v{ color:var(--text-2); font-weight:500; }
+  .type-pill{
+    background:var(--chrome); border:1px solid var(--border); border-radius:5px;
+    padding:1px 8px; color:var(--text-2);
+  }
+  .status-pill{
+    display:inline-flex; align-items:center; gap:6px;
+    border-radius:5px; padding:2px 9px; font-weight:600; font-size:12.5px;
+  }
+  .status-pill .d{ width:6px; height:6px; border-radius:50%; display:inline-block; }
+  .st-nao   { background:var(--s-grey-wk);  color:var(--s-grey); }
+  .st-nao .d{ background:var(--s-grey); }
+  .st-prog   { background:var(--s-amber-wk); color:var(--s-amber); }
+  .st-prog .d{ background:var(--s-amber); }
+  .st-feito   { background:var(--s-green-wk); color:var(--s-green); }
+  .st-feito .d{ background:var(--s-green); }
+  .st-espera  { background:var(--s-lilac-wk); color:var(--s-lilac); }
+  .st-espera .d{ background:var(--s-lilac); }
+
+  /* Set block shared */
+  .set-block{ margin: 34px 28px 0; }
+  .set-head{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:10px; gap:12px; flex-wrap:wrap;
+  }
+  .set-title{ font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-2); }
+  .set-count{ color:var(--muted); font-weight:500; margin-left:6px; }
+  .view-tabs{ display:flex; gap:4px; }
+  .tab{
+    font-family:inherit; font-size:12.5px; padding:5px 10px; border-radius:6px;
+    border:1px solid transparent; background:transparent; color:var(--muted); cursor:pointer;
+  }
+  .tab:hover{ color:var(--text); background:var(--hover); }
+  .tab.active{ background:var(--card); border-color:var(--border); color:var(--text); box-shadow:0 1px 1px rgba(0,0,0,.03); }
+  .tab:focus-visible{ outline:2px solid var(--fiscal); outline-offset:1px; }
+
+  /* Table (Set: table view) */
+  .atable{ width:100%; border-collapse:collapse; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .atable th{
+    text-align:left; font-size:12px; font-weight:600; color:var(--text-2);
+    background:var(--chrome); padding:9px 14px; border-bottom:1px solid var(--border);
+  }
+  .atable td{ padding:11px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  .atable tr:last-child td{ border-bottom:none; }
+  .atable tbody tr:hover td{ background:var(--hover); }
+  .title-cell{ display:flex; align-items:center; gap:9px; font-weight:600; }
+  .dot{ width:9px; height:9px; border-radius:3px; background:var(--c); flex:none; }
+  .muted{ color:var(--muted); }
+  .prog-cell{ display:flex; align-items:center; gap:9px; min-width:150px; }
+  .minibar{ flex:1; height:6px; background:var(--chrome); border:1px solid var(--border); border-radius:4px; overflow:hidden; }
+  .minibar i{ display:block; height:100%; border-radius:4px; transition:width .25s; }
+  .count-badge{
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:22px; height:22px; padding:0 6px; border-radius:6px;
+    background:var(--chrome); border:1px solid var(--border); font-size:12px; color:var(--text-2);
+  }
+  .kr-table-name{ font-weight:600; }
+  .kr-table-meta{ font-size:12px; color:var(--muted); margin-top:2px; font-weight:400; }
+  select.cell-status{
+    font:inherit; font-size:12.5px; font-weight:600; border-radius:5px;
+    padding:2px 8px; border:1px solid transparent; appearance:none; cursor:pointer;
+  }
+  select.cell-status:focus-visible{ outline:2px solid var(--fiscal); outline-offset:1px; }
+  select.cell-status option{ background:var(--card); color:var(--text); font-weight:500; }
+  .sel-nao{ background:var(--s-grey-wk); color:var(--s-grey); }
+  .sel-prog{ background:var(--s-amber-wk); color:var(--s-amber); }
+  .sel-feito{ background:var(--s-green-wk); color:var(--s-green); }
+  .sel-espera{ background:var(--s-lilac-wk); color:var(--s-lilac); }
+
+  /* Kanban (Set: board view) */
+  .kanban{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; align-items:start; }
+  .col-head{
+    display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600;
+    color:var(--text-2); padding:6px 4px 10px;
+  }
+  .col-head .d{ width:7px; height:7px; border-radius:50%; }
+  .col-count{ color:var(--muted); font-weight:500; margin-left:auto; }
+  .col-body{
+    display:flex; flex-direction:column; gap:8px; min-height:70px;
+    padding:2px; border-radius:10px; border:1px dashed transparent; transition:border-color .15s, background .15s;
+  }
+  .col-body.over{ border-color:var(--border-2); background:var(--hover); }
+  .kcard{
+    background:var(--card); border:1px solid var(--border); border-radius:9px;
+    padding:11px 12px; box-shadow:0 1px 2px rgba(0,0,0,.02); cursor:grab;
+  }
+  .kcard:hover{ border-color:var(--border-2); }
+  .kcard.dragging{ opacity:.45; }
+  .kcard .kt{ font-size:13px; font-weight:600; margin:0 0 8px; line-height:1.35; }
+  .kcard .krow{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .obj-tag{
+    display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600;
+    padding:2px 7px; border-radius:5px;
+  }
+  .obj-tag .d{ width:6px; height:6px; border-radius:2px; }
+  .tag-fiscal{ background:var(--fiscal-wk); color:var(--fiscal); }
+  .tag-fiscal .d{ background:var(--fiscal); }
+  .tag-contabil{ background:var(--contabil-wk); color:var(--contabil); }
+  .tag-contabil .d{ background:var(--contabil); }
+  .tag-med{ background:var(--med-wk); color:var(--med); }
+  .tag-med .d{ background:var(--med); }
+  .kpct{ font-size:12px; font-weight:700; color:var(--text-2); }
+  .kquote{
+    margin-top:8px; font-size:11.5px; color:var(--muted); font-style:italic;
+    border-left:2px solid var(--border-2); padding-left:8px;
+  }
+  .col-empty{
+    font-size:12px; color:var(--muted); border:1px dashed var(--border-2); border-radius:9px;
+    padding:16px 10px; text-align:center;
+  }
+  .col-add{
+    font:inherit; font-size:12.5px; color:var(--muted); cursor:pointer;
+    background:transparent; border:1px dashed var(--border-2); border-radius:9px;
+    padding:9px; width:100%; text-align:center;
+  }
+  .col-add:hover{ color:var(--text); background:var(--hover); }
+
+  /* Editor panel (Anytype-style object detail) */
+  .backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,.35); display:none;
+    align-items:center; justify-content:center; padding:24px; z-index:50;
+  }
+  .backdrop.on{ display:flex; }
+  .sheet{
+    background:var(--bg); border:1px solid var(--border); border-radius:14px;
+    width:min(560px,100%); max-height:85vh; overflow-y:auto; padding:26px 28px 22px;
+    box-shadow:0 24px 60px -20px rgba(0,0,0,.4);
+  }
+  .sheet h2{ font-size:20px; font-weight:700; margin:0 0 4px; letter-spacing:-.01em; }
+  .sheet .eyebrow{ font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; margin-bottom:14px; }
+  .frow{ display:grid; grid-template-columns:110px 1fr; gap:12px; align-items:center; padding:9px 0; border-bottom:1px solid var(--border); }
+  .frow:last-of-type{ border-bottom:none; }
+  .frow label{ font-size:12.5px; color:var(--muted); }
+  .frow input[type=text], .frow textarea{
+    width:100%; font:inherit; font-size:13.5px; color:var(--text);
+    background:var(--chrome); border:1px solid var(--border); border-radius:7px;
+    padding:7px 9px; resize:vertical;
+  }
+  .frow textarea{ min-height:56px; line-height:1.45; }
+  .frow input:focus-visible, .frow textarea:focus-visible, .frow select:focus-visible{
+    outline:2px solid var(--fiscal); outline-offset:-1px;
+  }
+  .frow select{
+    font:inherit; font-size:13px; padding:6px 9px; border-radius:7px;
+    background:var(--chrome); color:var(--text); border:1px solid var(--border); cursor:pointer;
+  }
+  .slider-row{ display:flex; align-items:center; gap:12px; }
+  input[type=range]{ flex:1; min-width:0; accent-color:var(--fiscal); cursor:pointer; }
+  input[type=range]:disabled{ cursor:not-allowed; opacity:.5; }
+  .slider-row b{ font-size:13.5px; min-width:42px; text-align:right; }
+  .sheet-actions{ display:flex; justify-content:space-between; gap:10px; margin-top:20px; }
+  .btn{
+    font:inherit; font-size:13px; cursor:pointer; border-radius:7px; padding:7px 13px;
+    background:var(--chrome); color:var(--text); border:1px solid var(--border-2);
+  }
+  .btn:hover{ background:var(--hover); }
+  .btn.primary{ background:var(--fiscal); border-color:var(--fiscal); color:#fff; }
+  .btn.primary:hover{ filter:brightness(1.07); }
+  .btn.warn:hover{ color:#d03b3b; border-color:#d03b3b; }
+  .btn:focus-visible{ outline:2px solid var(--fiscal); outline-offset:2px; }
+
+  /* guide footer */
+  .guide{
+    margin: 48px 28px 0; padding:22px 24px; background:var(--chrome);
+    border:1px solid var(--border); border-radius:10px;
+  }
+  .guide h3{
+    margin:0 0 16px; font-size:12.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--text);
+  }
+  .guide-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:20px 28px;
+  }
+  .guide-item h4{
+    margin:0 0 5px; font-size:13px; font-weight:650; color:var(--text);
+  }
+  .guide-item p{
+    margin:0; font-size:12.5px; line-height:1.55; color:var(--text-2);
+  }
+  .guide-item strong{ color:var(--text); font-weight:600; }
+  .guide-note{
+    margin:18px 0 0; padding-top:14px; border-top:1px solid var(--border);
+    font-size:12px; color:var(--muted);
+  }
+  .guide-note:empty{ display:none; }
+
+  @media (max-width:760px){
+    .kanban{ grid-template-columns:1fr 1fr; }
+  }
+  @media (max-width:520px){
+    .kanban{ grid-template-columns:1fr; }
+    .set-block{ margin-left:16px; margin-right:16px; }
+    .object-header{ padding-left:16px; padding-right:16px; }
+    .topbar{ padding-left:16px; padding-right:16px; }
+    .table-scroll{ overflow-x:auto; }
+  }
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; } }
+</style>
+
+<div class="app">
+
+  <div class="topbar">
+    <span>🗂️ Espaço TJB</span><span class="sep">/</span><span class="current">🎯 OKR — Ciclo 1</span>
+    <span class="grow"></span>
+    <span class="saved" id="saved">✓ salvo</span>
+    <button class="tool" id="btn-theme" title="Alternar tema" aria-label="Alternar tema claro/escuro"></button>
+    <button class="tool" id="btn-import">Importar</button>
+    <button class="tool" id="btn-export">Exportar</button>
+    <button class="tool" id="btn-reset">Restaurar</button>
+    <input type="file" id="file-input" accept="application/json,.json" hidden>
+  </div>
+
+  <div class="object-header">
+    <div class="icon">🎯</div>
+    <h1>OKR — TJB Contabilidade</h1>
+    <div class="relbar">
+      <div class="rel"><span class="rel-k">Tipo</span><span class="rel-v type-pill">Objective Tracker</span></div>
+      <div class="rel"><span class="rel-k">Ciclo</span><span class="rel-v num" id="rel-ciclo">—</span></div>
+      <div class="rel"><span class="rel-k">Dias restantes</span><span class="rel-v num" id="rel-dias">—</span></div>
+      <div class="rel"><span class="rel-k">Progresso</span><span class="rel-v num" id="rel-prog">—</span></div>
+      <div class="rel"><span class="rel-k">Status</span><span id="rel-status"></span></div>
+    </div>
+  </div>
+
+  <!-- Set: Objectives -->
+  <div class="set-block">
+    <div class="set-head">
+      <span class="set-title">Objectives <span class="set-count" id="obj-count">· 0</span></span>
+      <div class="view-tabs">
+        <button class="tab active">▤ Tabela</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="atable">
+        <thead>
+          <tr><th style="width:42%">Objective</th><th>Status</th><th>Progresso</th><th>Prazo</th><th>Key Results</th></tr>
+        </thead>
+        <tbody id="obj-rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Set: Key Results -->
+  <div class="set-block">
+    <div class="set-head">
+      <span class="set-title">Key Results <span class="set-count" id="kr-count">· 0</span></span>
+      <div class="view-tabs">
+        <button class="tab" data-view="table">▤ Tabela</button>
+        <button class="tab active" data-view="board">◫ Kanban</button>
+      </div>
+    </div>
+    <div id="kr-view"></div>
+  </div>
+
+  <div class="guide">
+    <h3>Como usar este painel</h3>
+    <div class="guide-grid">
+      <div class="guide-item">
+        <h4>Atualizar o andamento</h4>
+        <p>Arraste um card entre as colunas do Kanban para mudar o status. Clique em qualquer card para abrir a ficha completa e ajustar progresso, meta e observações. Na aba <strong>▤ Tabela</strong> dá para trocar o status direto pelo campo da linha.</p>
+      </div>
+      <div class="guide-item">
+        <h4>Como o progresso é calculado</h4>
+        <p>O progresso de cada Objective é a média dos seus Key Results, e o número no topo é a média de todos. KRs em <strong>Aguardando definição</strong> ficam fora da conta até terem meta — por isso não puxam o resultado para baixo.</p>
+      </div>
+      <div class="guide-item">
+        <h4>Onde os dados ficam salvos</h4>
+        <p>Tudo é gravado automaticamente neste navegador (o aviso <strong>✓ salvo</strong> aparece no topo a cada alteração). Nada é enviado para servidor — quem abrir o link em outro computador começa da versão original.</p>
+      </div>
+      <div class="guide-item">
+        <h4>Compartilhar e fazer backup</h4>
+        <p><strong>Exportar</strong> baixa um arquivo JSON com o estado atual; <strong>Importar</strong> carrega esse arquivo de volta. É assim que você leva o acompanhamento para outra máquina ou passa para outra pessoa. <strong>Restaurar</strong> volta tudo à versão da reunião.</p>
+      </div>
+    </div>
+    <p class="guide-note" id="note"></p>
+  </div>
+
+</div>
+
+<div class="backdrop" id="backdrop">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="eyebrow" id="sheet-eyebrow">Key Result</div>
+    <h2 id="sheet-title">—</h2>
+    <div class="frow">
+      <label for="f-name">Nome</label>
+      <input type="text" id="f-name">
+    </div>
+    <div class="frow">
+      <label for="f-obj">Objetivo</label>
+      <select id="f-obj"></select>
+    </div>
+    <div class="frow">
+      <label for="f-status">Status</label>
+      <select id="f-status"></select>
+    </div>
+    <div class="frow">
+      <label for="f-prog">Progresso</label>
+      <div class="slider-row">
+        <input type="range" id="f-prog" min="0" max="100" step="5">
+        <b class="num" id="f-prog-val">0%</b>
+      </div>
+    </div>
+    <div class="frow">
+      <label for="f-meta">Meta</label>
+      <textarea id="f-meta" placeholder="Qual é o resultado mensurável?"></textarea>
+    </div>
+    <div class="frow">
+      <label for="f-obs">Observação</label>
+      <textarea id="f-obs" placeholder="Contexto, pendências, decisões…"></textarea>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn warn" id="f-delete">Remover</button>
+      <div style="display:flex; gap:8px">
+        <button class="btn" id="f-cancel">Cancelar</button>
+        <button class="btn primary" id="f-save">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORE = "tjb-okr-anytype-v1";
+
+  var STATUS = [
+    { id:"nao",    label:"Não iniciada",          cls:"nao",    dot:"var(--s-grey)"  },
+    { id:"prog",   label:"Em andamento",          cls:"prog",   dot:"var(--s-amber)" },
+    { id:"feito",  label:"Concluído",             cls:"feito",  dot:"var(--s-green)" },
+    { id:"espera", label:"Aguardando definição",  cls:"espera", dot:"var(--s-lilac)" }
+  ];
+  function stat(id){
+    for(var i=0;i<STATUS.length;i++){ if(STATUS[i].id === id) return STATUS[i]; }
+    return STATUS[0];
+  }
+
+  var SEED = {
+    cycleStart:"2026-07-25",
+    cycleEnd:"2026-11-25",
+    objectives:[
+      { id:"fiscal",   tag:"Fiscal",   color:"var(--fiscal)",
+        name:"Fiscal — reduzir trabalho manual e custo operacional" },
+      { id:"contabil", tag:"Contábil", color:"var(--contabil)",
+        name:"Contábil — ganhos de eficiência no setor" },
+      { id:"med",      tag:"TJB Med",  color:"var(--med)",
+        name:"TJB Med — plataforma de plantões" }
+    ],
+    krs:[
+      { id:"f1", obj:"fiscal", status:"nao", progress:0,
+        name:"Protótipo interno equivalente ao Sped Automation",
+        meta:"Substituir a assinatura atual como solução principal",
+        obs:"Cliente já paga essa assinatura hoje e quer avaliar economia com versão interna" },
+      { id:"f2", obj:"fiscal", status:"nao", progress:0,
+        name:"Automação de download/importação de XML de ISS",
+        meta:"Reduzir o tempo médio de ~3 dias para menos de 1 dia", obs:"" },
+      { id:"f3", obj:"fiscal", status:"nao", progress:0,
+        name:"Parametrização padrão de acumuladores",
+        meta:"≥90% dos clientes novos sem configuração manual individual",
+        obs:"Demanda direta do cliente" },
+      { id:"f4", obj:"fiscal", status:"nao", progress:0,
+        name:"Download automático de notas de entrada (SEFAZ Bahia)",
+        meta:"Reduzir o tempo médio de ~3 dias para menos de 1 dia", obs:"" },
+      { id:"f5", obj:"fiscal", status:"nao", progress:0,
+        name:"Eliminar gargalo em cliente de alto volume",
+        meta:"Processar ≥90% do volume (100–120 mil cupons/mês) sem depender de uma única pessoa", obs:"" },
+      { id:"f6", obj:"fiscal", status:"nao", progress:0,
+        name:"Resolver conflito de acesso ao SIEG",
+        meta:"≥90% dos casos migrados para extração direta da base do cliente",
+        obs:"Cliente final também usa SIEG e gera conflito de base" },
+      { id:"f7", obj:"fiscal", status:"espera", progress:0,
+        name:"Ajustar busca após etapa “TFR”",
+        meta:"Meta a definir",
+        obs:"“a busca tem que ser corrigida depois daquela parte do TFR” — termo a confirmar com o cliente" },
+
+      { id:"c1", obj:"contabil", status:"nao", progress:0,
+        name:"Mapear processos contábeis prioritários",
+        meta:"Mapeamento e priorização cobrindo a maioria dos processos do setor", obs:"" },
+      { id:"c2", obj:"contabil", status:"nao", progress:0,
+        name:"Levantar horas dedicadas a customizações",
+        meta:"Baseline de horas mensais coletado para a maioria dos clientes ativos", obs:"" },
+      { id:"c3", obj:"contabil", status:"prog", progress:55,
+        name:"Automatizar quebra de extratos (PDF/Excel/OFX)",
+        meta:"≥90% dos extratos em PDF e OFX processados automaticamente",
+        obs:"Já funcional para PDF/OFX; versão web em desenvolvimento (fase de segurança)" },
+      { id:"c4", obj:"contabil", status:"espera", progress:0,
+        name:"Comparar relatórios para prever correções (“SSF”)",
+        meta:"Meta a definir",
+        obs:"nome do relatório de origem a confirmar com o cliente" },
+
+      { id:"m1", obj:"med", status:"nao", progress:0,
+        name:"Validar viabilidade do app com clientes médicos",
+        meta:"Validação concluída com amostra dos 100 clientes médicos em 2 meses", obs:"" },
+      { id:"m2", obj:"med", status:"nao", progress:0,
+        name:"Lançar MVP da plataforma de plantões",
+        meta:"MVP em produção com grupo piloto", obs:"" },
+      { id:"m3", obj:"med", status:"nao", progress:0,
+        name:"Adoção inicial entre clientes médicos",
+        meta:"≈20 dos 100 clientes médicos (20%) cadastrados na plataforma", obs:"" }
+    ]
+  };
+
+  var state = load();
+  var krView = "board";
+  var editing = null;
+
+  function clone(o){ return JSON.parse(JSON.stringify(o)); }
+  function esc(s){
+    return String(s == null ? "" : s)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+
+  function load(){
+    try{
+      var raw = localStorage.getItem(STORE);
+      if(raw){
+        var p = JSON.parse(raw);
+        if(p && Array.isArray(p.krs) && Array.isArray(p.objectives)) return p;
+      }
+    }catch(e){}
+    return clone(SEED);
+  }
+
+  var saveTimer, flashTimer;
+  function save(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){
+      try{ localStorage.setItem(STORE, JSON.stringify(state)); flash(); }catch(e){}
+    }, 200);
+  }
+  function flash(){
+    var el = document.getElementById("saved");
+    el.classList.add("on");
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(function(){ el.classList.remove("on"); }, 1400);
+  }
+
+  function scored(kr){ return kr.status !== "espera"; }
+  function krsOf(objId){
+    return state.krs.filter(function(k){ return k.obj === objId; });
+  }
+  function objProgress(objId){
+    var list = krsOf(objId).filter(scored);
+    if(!list.length) return null;
+    var s = 0;
+    list.forEach(function(k){ s += Number(k.progress) || 0; });
+    return Math.round(s / list.length);
+  }
+  function objStatus(objId){
+    var list = krsOf(objId);
+    if(!list.length) return "nao";
+    if(list.every(function(k){ return k.status === "feito"; })) return "feito";
+    if(list.some(function(k){ return k.status === "prog"; })) return "prog";
+    if(list.every(function(k){ return k.status === "espera"; })) return "espera";
+    return "nao";
+  }
+  function overall(){
+    var list = state.krs.filter(scored);
+    if(!list.length) return 0;
+    var s = 0;
+    list.forEach(function(k){ s += Number(k.progress) || 0; });
+    return Math.round(s / list.length);
+  }
+  function daysLeft(){
+    var end = new Date(state.cycleEnd + "T00:00:00");
+    var today = new Date(); today.setHours(0,0,0,0);
+    return Math.max(0, Math.round((end - today) / 86400000));
+  }
+  function fmt(iso){
+    var d = new Date(iso + "T00:00:00");
+    return String(d.getDate()).padStart(2,"0") + "/" + String(d.getMonth()+1).padStart(2,"0") + "/" + d.getFullYear();
+  }
+  function objById(id){
+    for(var i=0;i<state.objectives.length;i++){ if(state.objectives[i].id === id) return state.objectives[i]; }
+    return null;
+  }
+  function krById(id){
+    for(var i=0;i<state.krs.length;i++){ if(state.krs[i].id === id) return state.krs[i]; }
+    return null;
+  }
+  function tagClass(objId){
+    return objId === "fiscal" ? "tag-fiscal" : objId === "contabil" ? "tag-contabil" : "tag-med";
+  }
+
+  /* ── render ───────────────────────── */
+
+  function render(){
+    renderHeader();
+    renderObjectives();
+    renderKrs();
+    renderNote();
+  }
+
+  function renderHeader(){
+    document.getElementById("rel-ciclo").textContent = fmt(state.cycleStart) + " – " + fmt(state.cycleEnd);
+    document.getElementById("rel-dias").textContent = daysLeft();
+    document.getElementById("rel-prog").textContent = overall() + "%";
+
+    var done = state.krs.length && state.krs.every(function(k){ return k.status === "feito"; });
+    var any  = state.krs.some(function(k){ return k.status === "prog"; });
+    var s = stat(done ? "feito" : any ? "prog" : "nao");
+    document.getElementById("rel-status").innerHTML =
+      '<span class="status-pill st-' + s.cls + '"><span class="d"></span>' + esc(s.label) + '</span>';
+  }
+
+  function renderObjectives(){
+    document.getElementById("obj-count").textContent = "· " + state.objectives.length;
+    document.getElementById("obj-rows").innerHTML = state.objectives.map(function(o){
+      var p = objProgress(o.id);
+      var s = stat(objStatus(o.id));
+      return '<tr>' +
+        '<td><span class="title-cell"><span class="dot" style="--c:' + o.color + '"></span>' + esc(o.name) + '</span></td>' +
+        '<td><span class="status-pill st-' + s.cls + '"><span class="d"></span>' + esc(s.label) + '</span></td>' +
+        '<td><div class="prog-cell"><span class="num">' + (p == null ? "—" : p + "%") + '</span>' +
+          '<span class="minibar"><i style="width:' + (p||0) + '%;background:' + o.color + '"></i></span></div></td>' +
+        '<td class="num muted">' + fmt(state.cycleEnd) + '</td>' +
+        '<td><span class="count-badge">' + krsOf(o.id).length + '</span></td>' +
+      '</tr>';
+    }).join("");
+  }
+
+  function renderKrs(){
+    document.getElementById("kr-count").textContent = "· " + state.krs.length;
+    document.querySelectorAll(".view-tabs [data-view]").forEach(function(b){
+      b.classList.toggle("active", b.getAttribute("data-view") === krView);
+    });
+    document.getElementById("kr-view").innerHTML = krView === "board" ? boardHtml() : tableHtml();
+    if(krView === "board") wireDnd();
+  }
+
+  function boardHtml(){
+    return '<div class="kanban">' + STATUS.map(function(s){
+      var list = state.krs.filter(function(k){ return k.status === s.id; });
+      return '<div class="col">' +
+        '<div class="col-head"><span class="d" style="background:' + s.dot + '"></span>' +
+          esc(s.label) + '<span class="col-count">' + list.length + '</span></div>' +
+        '<div class="col-body" data-drop="' + s.id + '">' +
+          (list.length ? list.map(cardHtml).join("")
+                       : '<div class="col-empty">Nenhum KR aqui</div>') +
+          '<button class="col-add" data-add="' + s.id + '">+ Novo</button>' +
+        '</div>' +
+      '</div>';
+    }).join("") + '</div>';
+  }
+
+  function cardHtml(k){
+    var o = objById(k.obj) || { tag:"—" };
+    var waiting = !scored(k);
+    return '<div class="kcard" draggable="true" data-id="' + esc(k.id) + '" tabindex="0" role="button">' +
+      '<p class="kt">' + esc(k.name) + '</p>' +
+      '<div class="krow">' +
+        '<span class="obj-tag ' + tagClass(k.obj) + '"><span class="d"></span>' + esc(o.tag) + '</span>' +
+        (waiting ? '' : '<span class="kpct num">' + (Number(k.progress)||0) + '%</span>') +
+      '</div>' +
+      (waiting && k.obs ? '<p class="kquote">' + esc(k.obs) + '</p>' : '') +
+    '</div>';
+  }
+
+  function tableHtml(){
+    return '<div class="table-scroll"><table class="atable">' +
+      '<thead><tr><th style="width:46%">Key Result</th><th>Objetivo</th><th>Status</th><th>Progresso</th></tr></thead>' +
+      '<tbody>' + state.krs.map(function(k){
+        var o = objById(k.obj) || { tag:"—", color:"var(--muted)" };
+        var s = stat(k.status);
+        var waiting = !scored(k);
+        return '<tr data-id="' + esc(k.id) + '">' +
+          '<td><div class="kr-table-name">' + esc(k.name) + '</div>' +
+              '<div class="kr-table-meta">' + esc(k.meta || "sem meta definida") + '</div></td>' +
+          '<td><span class="obj-tag ' + tagClass(k.obj) + '"><span class="d"></span>' + esc(o.tag) + '</span></td>' +
+          '<td><select class="cell-status sel-' + s.cls + '" data-status="' + esc(k.id) + '">' +
+            STATUS.map(function(x){
+              return '<option value="' + x.id + '"' + (x.id === k.status ? " selected" : "") + '>' + esc(x.label) + '</option>';
+            }).join("") + '</select></td>' +
+          '<td><div class="prog-cell"><span class="num">' + (waiting ? "—" : (Number(k.progress)||0) + "%") + '</span>' +
+            '<span class="minibar"><i style="width:' + (waiting ? 0 : Number(k.progress)||0) + '%;background:' + o.color + '"></i></span></div></td>' +
+        '</tr>';
+      }).join("") + '</tbody></table></div>';
+  }
+
+  function renderNote(){
+    var waiting = state.krs.filter(function(k){ return !scored(k); });
+    var el = document.getElementById("note");
+    if(!waiting.length){ el.textContent = ""; return; }
+    el.textContent = "Neste momento, " + waiting.length + " Key Result" +
+      (waiting.length > 1 ? "s dependem" : " depende") +
+      " de informação do cliente para ter meta definida: " +
+      waiting.map(function(k){ return "“" + k.name + "”"; }).join(", ") + ".";
+  }
+
+  /* ── drag & drop ──────────────────── */
+
+  function wireDnd(){
+    var dragId = null;
+
+    document.querySelectorAll(".kcard").forEach(function(card){
+      card.addEventListener("dragstart", function(e){
+        dragId = card.getAttribute("data-id");
+        card.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+        try{ e.dataTransfer.setData("text/plain", dragId); }catch(err){}
+      });
+      card.addEventListener("dragend", function(){
+        card.classList.remove("dragging");
+        dragId = null;
+      });
+    });
+
+    document.querySelectorAll("[data-drop]").forEach(function(zone){
+      zone.addEventListener("dragover", function(e){
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        zone.classList.add("over");
+      });
+      zone.addEventListener("dragleave", function(){ zone.classList.remove("over"); });
+      zone.addEventListener("drop", function(e){
+        e.preventDefault();
+        zone.classList.remove("over");
+        var id = dragId;
+        if(!id){ try{ id = e.dataTransfer.getData("text/plain"); }catch(err){} }
+        var k = krById(id);
+        if(!k) return;
+        applyStatus(k, zone.getAttribute("data-drop"));
+        render(); save();
+      });
+    });
+  }
+
+  function applyStatus(k, newStatus){
+    k.status = newStatus;
+    if(newStatus === "feito")  k.progress = 100;
+    if(newStatus === "espera") k.progress = 0;
+    if(newStatus === "nao" && k.progress === 100) k.progress = 0;
+  }
+
+  /* ── editor sheet ─────────────────── */
+
+  var backdrop = document.getElementById("backdrop");
+
+  function openSheet(id){
+    var k = krById(id);
+    if(!k) return;
+    editing = id;
+
+    document.getElementById("sheet-title").textContent = k.name;
+    document.getElementById("f-name").value = k.name;
+
+    document.getElementById("f-obj").innerHTML = state.objectives.map(function(o){
+      return '<option value="' + esc(o.id) + '"' + (o.id === k.obj ? " selected" : "") + '>' + esc(o.tag) + '</option>';
+    }).join("");
+
+    document.getElementById("f-status").innerHTML = STATUS.map(function(s){
+      return '<option value="' + s.id + '"' + (s.id === k.status ? " selected" : "") + '>' + esc(s.label) + '</option>';
+    }).join("");
+
+    var prog = document.getElementById("f-prog");
+    prog.value = Number(k.progress) || 0;
+    prog.disabled = k.status === "espera";
+    document.getElementById("f-prog-val").textContent = prog.value + "%";
+
+    document.getElementById("f-meta").value = k.meta || "";
+    document.getElementById("f-obs").value = k.obs || "";
+
+    backdrop.classList.add("on");
+    document.getElementById("f-name").focus();
+  }
+
+  function closeSheet(){
+    backdrop.classList.remove("on");
+    editing = null;
+  }
+
+  document.getElementById("f-status").addEventListener("change", function(){
+    var prog = document.getElementById("f-prog");
+    if(this.value === "espera"){ prog.value = 0; prog.disabled = true; }
+    else if(this.value === "feito"){ prog.value = 100; prog.disabled = false; }
+    else { prog.disabled = false; }
+    document.getElementById("f-prog-val").textContent = prog.value + "%";
+  });
+
+  document.getElementById("f-prog").addEventListener("input", function(){
+    document.getElementById("f-prog-val").textContent = this.value + "%";
+  });
+
+  document.getElementById("f-save").addEventListener("click", function(){
+    var k = krById(editing);
+    if(!k) return closeSheet();
+    var nome = document.getElementById("f-name").value.trim();
+    if(nome) k.name = nome;
+    k.obj      = document.getElementById("f-obj").value;
+    k.status   = document.getElementById("f-status").value;
+    k.progress = Number(document.getElementById("f-prog").value) || 0;
+    k.meta     = document.getElementById("f-meta").value;
+    k.obs      = document.getElementById("f-obs").value;
+    if(k.status === "espera") k.progress = 0;
+    closeSheet(); render(); save();
+  });
+
+  document.getElementById("f-cancel").addEventListener("click", closeSheet);
+
+  document.getElementById("f-delete").addEventListener("click", function(){
+    var k = krById(editing);
+    if(!k) return closeSheet();
+    if(!confirm("Remover “" + k.name + "”?")) return;
+    state.krs = state.krs.filter(function(x){ return x.id !== k.id; });
+    closeSheet(); render(); save();
+  });
+
+  backdrop.addEventListener("click", function(e){ if(e.target === backdrop) closeSheet(); });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape" && backdrop.classList.contains("on")) closeSheet();
+  });
+
+  /* ── interactions ─────────────────── */
+
+  var view = document.getElementById("kr-view");
+
+  view.addEventListener("click", function(e){
+    var add = e.target.closest("[data-add]");
+    if(add){
+      var st = add.getAttribute("data-add");
+      var id = "k" + Date.now().toString(36);
+      state.krs.push({ id:id, obj:state.objectives[0].id, status:st,
+                       progress: st === "feito" ? 100 : 0,
+                       name:"Novo Key Result", meta:"", obs:"" });
+      render(); save(); openSheet(id);
+      return;
+    }
+    if(e.target.closest("select")) return;
+    var card = e.target.closest(".kcard");
+    if(card) return openSheet(card.getAttribute("data-id"));
+    var row = e.target.closest("tr[data-id]");
+    if(row) openSheet(row.getAttribute("data-id"));
+  });
+
+  view.addEventListener("keydown", function(e){
+    if(e.key !== "Enter" && e.key !== " ") return;
+    var card = e.target.closest(".kcard");
+    if(!card) return;
+    e.preventDefault();
+    openSheet(card.getAttribute("data-id"));
+  });
+
+  view.addEventListener("change", function(e){
+    var sel = e.target.closest("[data-status]");
+    if(!sel) return;
+    var k = krById(sel.getAttribute("data-status"));
+    if(!k) return;
+    applyStatus(k, sel.value);
+    render(); save();
+  });
+
+  document.querySelectorAll(".view-tabs [data-view]").forEach(function(b){
+    b.addEventListener("click", function(){
+      krView = b.getAttribute("data-view");
+      renderKrs();
+    });
+  });
+
+  /* ── tema claro / escuro ──────────── */
+
+  var THEME_KEY = "tjb-okr-tema";
+  var themeBtn = document.getElementById("btn-theme");
+
+  function osPrefersDark(){
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+  function currentTheme(){
+    var t;
+    try{ t = localStorage.getItem(THEME_KEY); }catch(e){}
+    if(t === "dark" || t === "light") return t;
+    return osPrefersDark() ? "dark" : "light";
+  }
+  function applyTheme(t){
+    document.documentElement.setAttribute("data-theme", t);
+    themeBtn.textContent = t === "dark" ? "☀ Claro" : "☾ Escuro";
+    themeBtn.setAttribute("aria-label",
+      t === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro");
+  }
+
+  applyTheme(currentTheme());
+
+  themeBtn.addEventListener("click", function(){
+    var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    try{ localStorage.setItem(THEME_KEY, next); }catch(e){}
+    applyTheme(next);
+  });
+
+  /* ── toolbar ──────────────────────── */
+
+  document.getElementById("btn-export").addEventListener("click", function(){
+    var data = JSON.stringify(state, null, 2);
+    var name = "okr-tjb-" + new Date().toISOString().slice(0,10) + ".json";
+    if(window.claude && window.claude.downloads){
+      window.claude.downloads.save({ filename:name, data:data })["catch"](function(err){
+        var code = err && err.code;
+        if(code === "declined") return;
+        alert("Não foi possível exportar (" + (code || "erro") + ").");
+      });
+    } else {
+      var blob = new Blob([data], { type:"application/json" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = name; a.click();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    }
+  });
+
+  document.getElementById("btn-import").addEventListener("click", function(){
+    document.getElementById("file-input").click();
+  });
+
+  document.getElementById("file-input").addEventListener("change", function(e){
+    var file = e.target.files && e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var p = JSON.parse(reader.result);
+        if(!p || !Array.isArray(p.krs) || !Array.isArray(p.objectives)) throw new Error("formato");
+        state = p; render(); save();
+      }catch(err){
+        alert("Arquivo inválido. Use um JSON exportado por esta própria página.");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
+
+  document.getElementById("btn-reset").addEventListener("click", function(){
+    if(!confirm("Restaurar o OKR para a versão original da reunião? As edições feitas aqui serão perdidas.")) return;
+    state = clone(SEED); render(); save();
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
