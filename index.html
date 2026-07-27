@@ -99,6 +99,9 @@
   }
   .tool:hover{ background:var(--hover); border-color:var(--border); color:var(--text); }
   .tool:focus-visible{ outline:2px solid var(--fiscal); outline-offset:1px; }
+  .tool.publish{ background:var(--fiscal); border-color:var(--fiscal); color:#fff; font-weight:600; }
+  .tool.publish:hover{ filter:brightness(1.08); background:var(--fiscal); color:#fff; }
+  .tool.publish:disabled{ opacity:.6; cursor:wait; }
   .saved{ font-size:12px; color:var(--muted); opacity:0; transition:opacity .25s; }
   .saved.on{ opacity:1; }
   .dirty{
@@ -326,6 +329,7 @@
     <span class="grow"></span>
     <span class="dirty" id="dirty"><span class="d"></span>alterações não publicadas</span>
     <span class="saved" id="saved">✓ salvo neste navegador</span>
+    <button class="tool publish" id="btn-publish">Publicar</button>
     <button class="tool" id="btn-theme" title="Alternar tema" aria-label="Alternar tema claro/escuro"></button>
     <button class="tool" id="btn-import">Importar</button>
     <button class="tool" id="btn-export">Exportar</button>
@@ -388,11 +392,11 @@
       </div>
       <div class="guide-item">
         <h4>Todo mundo vê o mesmo painel</h4>
-        <p>Esta página carrega a versão publicada oficialmente sempre que é aberta — qualquer pessoa que abrir o link, em qualquer computador, vê o mesmo andamento. Se você editar algo aqui, a mudança fica guardada só neste navegador (aviso <strong>alterações não publicadas</strong> no topo) até ser publicada oficialmente.</p>
+        <p>Esta página carrega a versão publicada direto de um banco compartilhado — qualquer pessoa que abrir o link, em qualquer computador, vê o mesmo andamento. Se você editar algo aqui, a mudança fica guardada só neste navegador (aviso <strong>alterações não publicadas</strong> no topo) até ser publicada.</p>
       </div>
       <div class="guide-item">
         <h4>Como publicar uma mudança</h4>
-        <p>Clique em <strong>Exportar</strong> para baixar um JSON com o estado atual e envie para quem mantém o painel atualizar a versão oficial. <strong>Importar</strong> carrega um JSON de volta nesta tela. <strong>Restaurar</strong> descarta suas edições locais e volta para a última versão publicada.</p>
+        <p>Depois de editar, clique em <strong>Publicar</strong> e informe a senha — a mudança fica visível para qualquer pessoa que abrir o link, na hora, sem passar por ninguém. <strong>Exportar/Importar</strong> continuam servindo como backup manual em JSON. <strong>Restaurar</strong> descarta suas edições locais e recarrega a última versão publicada.</p>
       </div>
     </div>
     <p class="guide-note" id="note"></p>
@@ -567,17 +571,44 @@
     flashTimer = setTimeout(function(){ el.classList.remove("on"); }, 1400);
   }
 
-  // Site estático (GitHub Pages etc.): busca o data.json publicado no mesmo domínio.
-  // No artifact do claude.ai, o CSP bloqueia fetch externo e isto falha silenciosamente —
-  // o SEED embutido continua servindo de base, sem quebrar nada.
-  fetch("./data.json", { cache:"no-store" })
-    .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+  // ── fonte publicada: Supabase primeiro, data.json como plano B ──
+  // No artifact do claude.ai o CSP bloqueia fetch para fora do domínio, então as duas
+  // tentativas falham em silêncio e o SEED embutido continua servindo de base — nada quebra.
+
+  var SUPABASE_URL = "https://hwpmzdiqiudiwnxlxqwr.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_SoSS2xZ45ON59sguBwN4eQ_4H6iN1Xf";
+
+  function supaHeaders(extra){
+    var h = { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY };
+    if(extra) for(var k in extra) h[k] = extra[k];
+    return h;
+  }
+
+  function fetchFromSupabase(){
+    return fetch(SUPABASE_URL + "/rest/v1/okr_state?id=eq.1&select=data", {
+      headers: supaHeaders(), cache:"no-store"
+    })
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+      .then(function(rows){
+        var d = rows && rows[0] && rows[0].data;
+        if(!validShape(d)) return Promise.reject();
+        return d;
+      });
+  }
+
+  function fetchFromDataJson(){
+    return fetch("./data.json", { cache:"no-store" })
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+      .then(function(d){ return validShape(d) ? d : Promise.reject(); });
+  }
+
+  fetchFromSupabase()
+    .catch(fetchFromDataJson)
     .then(function(data){
-      if(!validShape(data)) return;
       published = data;
       if(!draft){ state = clone(published); render(); }
     })
-    .catch(function(){ /* offline, CSP do artifact, ou data.json ainda não existe */ });
+    .catch(function(){ /* nenhuma fonte disponível — mantém o SEED embutido */ });
 
   function scored(kr){ return kr.status !== "espera"; }
   function krsOf(objId){
@@ -930,6 +961,37 @@
     var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
     try{ localStorage.setItem(THEME_KEY, next); }catch(e){}
     applyTheme(next);
+  });
+
+  /* ── publicar ─────────────────────── */
+
+  document.getElementById("btn-publish").addEventListener("click", function(){
+    var btn = this;
+    var pass = prompt("Senha para publicar as alterações:");
+    if(pass == null || pass === "") return;
+    btn.disabled = true; var original = btn.textContent; btn.textContent = "Publicando…";
+    fetch(SUPABASE_URL + "/rest/v1/rpc/publish_okr_state", {
+      method: "POST",
+      headers: supaHeaders({ "Content-Type":"application/json" }),
+      body: JSON.stringify({ new_data: state, passphrase: pass })
+    })
+      .then(function(r){
+        if(r.ok) return;
+        return r.json().catch(function(){ return {}; }).then(function(err){
+          throw new Error((err && (err.message || err.hint)) || ("HTTP " + r.status));
+        });
+      })
+      .then(function(){
+        published = clone(state);
+        render();
+        alert("Publicado — qualquer pessoa que abrir o link agora vê essa versão.");
+      })
+      .catch(function(err){
+        var msg = (err && err.message) || "";
+        if(/senha incorreta/i.test(msg)) alert("Senha incorreta — nada foi publicado.");
+        else alert("Não consegui publicar (" + (msg || "erro de conexão") + "). O Supabase foi configurado? Veja supabase-setup.sql.");
+      })
+      .finally(function(){ btn.disabled = false; btn.textContent = original; });
   });
 
   /* ── toolbar ──────────────────────── */
