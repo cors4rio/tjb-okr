@@ -965,11 +965,9 @@
 
   /* ── publicar ─────────────────────── */
 
-  document.getElementById("btn-publish").addEventListener("click", function(){
-    var btn = this;
-    var pass = prompt("Senha para publicar as alterações:");
-    if(pass == null || pass === "") return;
-    btn.disabled = true; var original = btn.textContent; btn.textContent = "Publicando…";
+  function doPublish(pass, btn){
+    var original = btn.textContent;
+    btn.disabled = true; btn.textContent = "Publicando…";
     fetch(SUPABASE_URL + "/rest/v1/rpc/publish_okr_state", {
       method: "POST",
       headers: supaHeaders({ "Content-Type":"application/json" }),
@@ -983,6 +981,8 @@
       })
       .then(function(){
         published = clone(state);
+        draft = null;
+        try{ localStorage.removeItem(STORE); }catch(e){}
         render();
         alert("Publicado — qualquer pessoa que abrir o link agora vê essa versão.");
       })
@@ -992,6 +992,31 @@
         else alert("Não consegui publicar (" + (msg || "erro de conexão") + "). O Supabase foi configurado? Veja supabase-setup.sql.");
       })
       .finally(function(){ btn.disabled = false; btn.textContent = original; });
+  }
+
+  document.getElementById("btn-publish").addEventListener("click", function(){
+    var btn = this;
+    var pass = prompt("Senha para publicar as alterações:");
+    if(pass == null || pass === "") return;
+
+    // Confere se alguém publicou algo mais novo enquanto esta sessão estava editando,
+    // antes de sobrescrever — evita o caso de duas pessoas publicando quase junto.
+    fetchFromSupabase().catch(function(){ return null; }).then(function(latest){
+      if(latest && JSON.stringify(latest) !== JSON.stringify(published)){
+        var proceed = confirm(
+          "Alguém publicou uma versão diferente da que esta sessão carregou.\n\n" +
+          "Publicar agora vai SOBRESCREVER essa versão mais recente com a sua.\n\n" +
+          "Continuar mesmo assim?"
+        );
+        if(!proceed){
+          published = latest;
+          if(!draft) state = clone(published);
+          render();
+          return;
+        }
+      }
+      doPublish(pass, btn);
+    });
   });
 
   /* ── toolbar ──────────────────────── */
@@ -1037,7 +1062,10 @@
 
   document.getElementById("btn-reset").addEventListener("click", function(){
     if(!confirm("Restaurar para a última versão publicada? As edições feitas aqui neste navegador serão perdidas.")) return;
-    state = clone(published); render(); save();
+    state = clone(published);
+    draft = null;
+    try{ localStorage.removeItem(STORE); }catch(e){}
+    render();
   });
 
   render();
